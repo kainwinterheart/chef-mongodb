@@ -36,14 +36,6 @@ when "debian"
   end
   node.override['mongodb']['package_name'] = "mongodb-10gen"
 
-when "rhel","fedora"
-  yum_repository "10gen" do
-    description "10gen RPM Repository"
-    url "http://downloads-distro.mongodb.org/repo/redhat/os/#{node['kernel']['machine']  =~ /x86_64/ ? 'x86_64' : 'i686'}"
-    action :add
-  end
-  node.override['mongodb']['package_name'] = "mongo-10gen-server"
-
 else
     # pssst build from source
     Chef::Log.warn("Adding the #{node['platform_family']} 10gen repository is not yet not supported by this cookbook")

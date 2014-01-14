@@ -16,9 +16,6 @@ Installs and configures MongoDB, supporting:
 This cookbook depends on these external cookbooks
 
 - apt
-- python
-- runit
-- yum
 
 ## Platform:
 

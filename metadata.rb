@@ -14,9 +14,6 @@ recipe "mongodb::replicaset", "Installs and configures a mongodb replicaset"
 recipe "mongodb::mms-agent", "Installs and configures a Mongo Management Service agent"
 
 depends "apt", ">= 1.8.2"
-depends "python", ">= 1.3.0"
-depends "runit", ">= 1.1.6"
-depends "yum"
 
 %w{ ubuntu debian freebsd centos redhat fedora amazon scientific}.each do |os|
   supports os

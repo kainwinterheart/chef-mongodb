@@ -64,40 +64,8 @@ default[:mongodb][:is_shard] = nil
 default[:mongodb][:is_configserver] = nil
 
 case node['platform_family']
-when "freebsd"
-  default[:mongodb][:package_name] = "mongo-10gen-server"
-  default[:mongodb][:sysconfig_file] = "/etc/rc.conf.d/mongodb"
-  default[:mongodb][:init_dir] = "/usr/local/etc/rc.d"
-  default[:mongodb][:root_group] = "wheel"
-when "rhel","fedora"
-  # determine the package name
-  # from http://rpm.pbone.net/index.php3?stat=3&limit=1&srodzaj=3&dl=40&search=mongodb
-  # verified for RHEL5,6 Fedora 18,19
-  default[:mongodb][:package_name] = "mongodb-server"
-  default[:mongodb][:sysconfig_file] = "/etc/sysconfig/mongodb"
-  default[:mongodb][:user] = "mongod"
-  default[:mongodb][:group] = "mongod"
-  default[:mongodb][:init_script_template] = "redhat-mongodb.init.erb"
-  default[:mongodb][:default_init_name] = "mongod"
-  default[:mongodb][:instance_name] = "mongod"
-  # then there is this guy
-  if node['platform'] == 'centos' || node['platform'] == 'amazon' then
-      Chef::Log.warn("CentOS doesn't provide mongodb, forcing use of 10gen repo")
-      default[:mongodb][:install_method] = "10gen"
-      default[:mongodb][:package_name] = "mongo-10gen-server"
-  end
-#when "debian"
-else
-  if node['platform_family'] != 'debian' then
-    Chef::Log.warn("Unknown Platform Family defaulting to 'debian' for [#{node['platform_family']}]")
-  end
-  if node['platform'] == "ubuntu" then
-    default[:mongodb][:apt_repo] = "ubuntu-upstart"
-    default[:mongodb][:init_dir] = "/etc/init/"
-    default[:mongodb][:init_script_template] = "debian-mongodb.upstart.erb"
-  else
+when "debian"
     default[:mongodb][:apt_repo] = "debian-sysvinit"
-  end
 end
 
 
