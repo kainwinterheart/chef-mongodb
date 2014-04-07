@@ -18,6 +18,7 @@
 #
 
 node.set[:mongodb][:is_replicaset] = true
+node.set[:mongodb][:sysconfig][:DAEMON_OPTS] = "--config #{node['mongodb']['configfile']} --replSet #{node['mongodb']['replicaset_name']}"
 
 include_recipe "mongodb::install"
 include_recipe "mongodb::mongo_gem"
