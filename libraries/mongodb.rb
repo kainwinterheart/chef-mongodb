@@ -54,7 +54,11 @@ class Chef::ResourceDefinitionList::MongoDB
     rs_members = []
     rs_options = {}
     members.each_index do |n|
-      members[n] = node.default.merge(members[n])
+      new_member = Chef::Node.new
+      new_member.consume_attributes( node.default.to_hash )
+      new_member.consume_attributes( members[n].to_hash )
+      members[n] = new_member
+
       host = "#{members[n]['fqdn']}:#{members[n]['mongodb']['port']}"
       rs_options[host] = {}
       rs_options[host]['arbiterOnly'] = true if members[n]['mongodb']['replica_arbiter_only']
