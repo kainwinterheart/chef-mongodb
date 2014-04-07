@@ -11,11 +11,10 @@ recipe "mongodb::mongos", "Installs and configures a mongos which can be used in
 recipe "mongodb::configserver", "Installs and configures a configserver for mongodb sharding"
 recipe "mongodb::shard", "Installs and configures a single shard"
 recipe "mongodb::replicaset", "Installs and configures a mongodb replicaset"
-recipe "mongodb::mms-agent", "Installs and configures a Mongo Management Service agent"
 
-depends "apt", ">= 1.8.2"
+depends "apt", ">= 2.0.0"
 
-%w{ ubuntu debian freebsd centos redhat fedora amazon scientific}.each do |os|
+%w{ ubuntu debian }.each do |os|
   supports os
 end
 
@@ -88,17 +87,6 @@ attribute "mongodb/nojournal",
   :display_name => "Disable Journals",
   :description => "Journals are enabled by default on 64bit after mongo 2.0, this can disable it",
   :default => "false"
-
-attribute "mongodb/mms_agent",
-  :display_name => "MMS Agent",
-  :description => "Hash of MMS Agent attributes",
-  :type => "hash"
-
-attribute "mongodb/mms_agent/api_key",
-  :display_name => "MMS Agent API Key"
-
-attribute "mongodb/mms_agent/secret_key",
-  :display_name => "MMS Agent Secret Key"
 
 attribute "mongodb/oplog_size",
   :display_name => "oplogSize",

@@ -33,6 +33,7 @@ when "debian"
     keyserver "hkp://keyserver.ubuntu.com:80"
     key "7F0CEB10"
     action :add
+    notifies :run, "execute[apt-get update]", :immediately
   end
   node.override['mongodb']['package_name'] = "mongodb-10gen"
 

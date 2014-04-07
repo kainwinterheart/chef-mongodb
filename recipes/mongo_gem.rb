@@ -4,8 +4,16 @@ if(Gem.const_defined?("Version") and Gem::Version.new(Chef::VERSION) < Gem::Vers
     action :nothing
   end.run_action(:install)
   Gem.clear_paths
+
+  gem_package 'bson_ext' do
+    action :nothing
+  end.run_action(:install)
+  Gem.clear_paths
 else
   chef_gem 'mongo' do
+    action :install
+  end
+  chef_gem 'bson_ext' do
     action :install
   end
 end
