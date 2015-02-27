@@ -38,7 +38,7 @@ if configsrv.length != 1 and configsrv.length != 3
   raise "Wrong number of configserver nodes"
 end
 
-mongodb_instance "mongos" do
+mongodb_instance node['mongodb']['instance_name'] do
   mongodb_type "mongos"
   port         node['mongodb']['port']
   logpath      node['mongodb']['logpath']

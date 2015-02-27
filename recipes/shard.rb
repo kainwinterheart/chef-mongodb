@@ -32,7 +32,7 @@ end
 # we are not starting the shard service with the --shardsvr
 # commandline option because right now this only changes the port it's
 # running on, and we are overwriting this port anyway.
-mongodb_instance "shard" do
+mongodb_instance node['mongodb']['instance_name'] do
   mongodb_type "shard"
   port         node['mongodb']['port']
   logpath      node['mongodb']['logpath']
