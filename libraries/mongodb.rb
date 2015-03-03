@@ -323,7 +323,11 @@ class Chef::ResourceDefinitionList::MongoDB
     sharded_collections.each do |name, key|
       cmd = BSON::OrderedHash.new
       cmd['shardcollection'] = name
-      cmd['key'] = { key => 1 }
+      unless key.kind_of?(Hash)
+        key = { "#{key}" => 1 }
+      end
+      cmd['key'] = key
+      key = key.inspect
       begin
         result = admin.command(cmd, :check_response => false)
       rescue Mongo::OperationTimeout
@@ -340,6 +344,64 @@ class Chef::ResourceDefinitionList::MongoDB
       else
         # success
         Chef::Log.info("Sharding for collection '#{result['collectionsharded']}' enabled")
+      end
+    end
+  end
+
+  def self.configure_create_indexes(node, create_indexes)
+    if create_indexes.nil? || create_indexes.empty?
+      Chef::Log.warn('No indexes configured, doing nothing')
+      return
+    end
+
+    # lazy require, to move loading this modules to runtime of the cookbook
+    require 'rubygems'
+    require 'mongo'
+
+    begin
+      connection = Mongo::Connection.new('localhost', node['mongodb']['config']['port'], :op_timeout => 5)
+    rescue => e
+      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
+      return
+    end
+
+    create_indexes.each do |collection, data|
+      split_collection = collection.split('.')
+      dbname = split_collection.shift()
+      collection = split_collection.join('.')
+
+      cmd = BSON::OrderedHash.new
+      cmd['createIndexes'] = collection
+      cmd['indexes'] = []
+
+      data.each do |spec|
+        idx_spec = BSON::OrderedHash.new
+        [ 'name', 'key', 'background', 'sparse', 'unique', 'dropDups' ].each do |key|
+            idx_spec[ key ] = spec[ key ] if spec.has_key?( key ) && ! spec[ key ].nil?
+        end
+        unless idx_spec['key'].kind_of?(Hash)
+          idx_spec['key'] = { "#{idx_spec['key']}" => 1 }
+        end
+        cmd['indexes'] << idx_spec
+      end
+      key = key.inspect
+      db = connection[dbname]
+      begin
+        result = db.command(cmd, :check_response => false)
+      rescue Mongo::OperationTimeout
+        result = "command " + cmd.inspect + " timed out"
+      end
+      if result['ok'] == 0
+        # some error
+        errmsg = result.fetch('errmsg')
+        #if errmsg == 'already sharded'
+        #  Chef::Log.info("Sharding is already configured for collection '#{name}', doing nothing")
+        #else
+          Chef::Log.error("Failed to execute command " + cmd.inspect + ", result was: " + result.inspect)
+        #end
+      else
+        # success
+        Chef::Log.info("Indexes for #{dbname}.#{collection} are created successfully")
       end
     end
   end

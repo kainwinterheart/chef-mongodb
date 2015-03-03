@@ -96,6 +96,7 @@ define :mongodb_instance,
   new_resource.root_group                 = node['mongodb']['root_group']
   new_resource.shard_name                 = node['mongodb']['shard_name']
   new_resource.sharded_collections        = node['mongodb']['sharded_collections']
+  new_resource.create_indexes             = node['mongodb']['create_indexes']
   new_resource.sysconfig_file             = node['mongodb']['sysconfig_file']
   new_resource.sysconfig_file_template    = node['mongodb']['sysconfig_file_template']
   new_resource.sysconfig_vars             = node['mongodb']['sysconfig']
@@ -265,6 +266,7 @@ define :mongodb_instance,
       block do
         MongoDB.configure_shards(node, shard_nodes)
         MongoDB.configure_sharded_collections(node, new_resource.sharded_collections)
+        MongoDB.configure_create_indexes(node, new_resource.create_indexes)
       end
       action :nothing
     end
