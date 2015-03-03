@@ -19,27 +19,22 @@
 # limitations under the License.
 #
 
-node.set[:mongodb][:is_shard] = true
+node.set['mongodb']['is_shard'] = true
+node.set['mongodb']['shard_name'] = node['mongodb']['shard_name']
+node.set['mongodb']['is_replicaset'] = node['mongodb']['is_replicaset']
+node.set['mongodb']['cluster_name'] = node['mongodb']['cluster_name']
 
-include_recipe "mongodb::install"
-
-# disable and stop the default mongodb instance
-service "mongodb" do
-  supports :status => true, :restart => true
-  action [:disable, :stop]
-end
+include_recipe 'mongodb::install'
 
 # we are not starting the shard service with the --shardsvr
 # commandline option because right now this only changes the port it's
 # running on, and we are overwriting this port anyway.
 mongodb_instance node['mongodb']['instance_name'] do
-  mongodb_type "shard"
-  port         node['mongodb']['port']
-  logpath      node['mongodb']['logpath']
-  dbpath       node['mongodb']['dbpath']
-  if node.mongodb.is_replicaset
-    replicaset    node
-  end
-  enable_rest node['mongodb']['enable_rest']
-  smallfiles   node['mongodb']['smallfiles']
+  mongodb_type 'shard'
+  port         node['mongodb']['config']['port']
+  logpath      node['mongodb']['config']['logpath']
+  dbpath       node['mongodb']['config']['dbpath']
+  replicaset   node if node['mongodb']['is_replicaset']
+  enable_rest  node['mongodb']['config']['rest']
+  smallfiles   node['mongodb']['config']['smallfiles']
 end
