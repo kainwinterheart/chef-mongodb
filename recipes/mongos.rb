@@ -26,8 +26,13 @@ node.override['mongodb']['instance_name'] = 'mongos'
 include_recipe 'mongodb::install'
 include_recipe 'mongodb::mongo_gem'
 
-service node[:mongodb][:default_init_name] do
-  action [:disable, :stop]
+[ 'mongod', 'mongodb' ].each do |service_name|
+    service service_name do
+      provider Chef::Provider::Service::Upstart if node['mongodb']['apt_repo'] == 'ubuntu-upstart'
+      supports :stop => true
+      action [:disable, :stop]
+      ignore_failure true
+    end
 end
 
 configsrvs = search(

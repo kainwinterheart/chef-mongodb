@@ -39,9 +39,23 @@ define :mongodb_instance,
     provider = 'mongos'
     # mongos will fail to start if dbpath is set
     node.default['mongodb']['config']['dbpath'] = nil
+    node.default['mongodb']['config']['nojournal'] = nil
+    node.default['mongodb']['config']['rest'] = nil
+    node.default['mongodb']['config']['smallfiles'] = nil
     unless node['mongodb']['config']['configdb']
-      node.default['mongodb']['config']['configdb'] = params[:configservers].map do |n|
-        "#{(n['mongodb']['configserver_url'] || n['fqdn'])}:#{n['mongodb']['config']['port']}"
+      node.set['mongodb']['config']['configdb'] = params[:configservers].map do |n|
+        new_n = Chef::Node.new
+        new_n.consume_attributes( node.default.to_hash )
+        new_n.consume_attributes( n.to_hash )
+        n.consume_attributes( new_n.to_hash )
+
+        host = n['mongodb']['configserver_url']
+
+        unless host
+          host = n['fqdn']
+        end
+
+        "#{host}:#{n['mongodb']['config']['port']}"
       end.sort.join(',')
     end
   else

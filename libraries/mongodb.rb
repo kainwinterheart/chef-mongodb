@@ -218,14 +218,29 @@ class Chef::ResourceDefinitionList::MongoDB
     shard_groups = Hash.new { |h, k| h[k] = [] }
 
     shard_nodes.each do |n|
-      if n['recipes'].include?('mongodb::replicaset')
-        # do not include hidden members when calling addShard
-        # see https://jira.mongodb.org/browse/SERVER-9882
-        next if n['mongodb']['replica_hidden']
+      new_n = Chef::Node.new
+      new_n.consume_attributes( node.default.to_hash )
+      new_n.consume_attributes( n.to_hash )
+      n.consume_attributes( new_n.to_hash )
+
+      next if n['mongodb']['replica_hidden']
+      
+      n_recipes = n['recipes']
+
+      if n_recipes.nil?
+        n_recipes = []
+      end
+
+      key = n['mongodb']['config']['replSet']
+
+      unless key
         key = "rs_#{n['mongodb']['shard_name']}"
-      else
+      end
+
+      unless key
         key = '_single'
       end
+
       shard_groups[key] << "#{n['fqdn']}:#{n['mongodb']['config']['port']}"
     end
     Chef::Log.info(shard_groups.inspect)

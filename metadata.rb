@@ -93,3 +93,8 @@ attribute 'mongodb/config/nojournal',
           :description => 'Journals are enabled by default on 64bit after mongo 2.0, this can disable it',
           :default => 'false'
 
+attribute 'mongodb/config/configdb',
+          :display_name => 'configdb',
+          :description => 'configdb for mongos',
+          :default => ''
+
