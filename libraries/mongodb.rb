@@ -56,7 +56,7 @@ class Chef::ResourceDefinitionList::MongoDB
       new_member = Chef::Node.new
       new_member.consume_attributes( node.default.to_hash )
       new_member.consume_attributes( members[n].to_hash )
-      members[n] = new_member
+      members[n].consume_attributes( new_member.to_hash )
 
       host = "#{members[n]['fqdn']}:#{members[n]['mongodb']['config']['port']}"
       rs_options[host] = {}
