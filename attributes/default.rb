@@ -21,6 +21,7 @@
 default[:mongodb][:client_roles] = []
 default[:mongodb][:cluster_name] = nil
 default[:mongodb][:shard_name] = 'default'
+default[:mongodb][:hint][:configservers] = nil
 
 # replica options
 default[:mongodb][:replica_arbiter_only] = false

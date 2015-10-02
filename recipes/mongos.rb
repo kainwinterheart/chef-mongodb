@@ -35,12 +35,21 @@ include_recipe 'mongodb::mongo_gem'
     end
 end
 
-configsrvs = search(
-  :node,
-  "mongodb_cluster_name:#{node['mongodb']['cluster_name']} AND \
-   mongodb_is_configserver:true AND \
-   chef_environment:#{node.chef_environment}"
-)
+configsrvs = []
+
+if node['mongodb']['hint']['configservers'].nil?
+
+    configsrvs = search(
+      :node,
+      "mongodb_cluster_name:#{node['mongodb']['cluster_name']} AND \
+       mongodb_is_configserver:true AND \
+       chef_environment:#{node.chef_environment}"
+    )
+
+else
+
+    configsrvs = node['mongodb']['hint']['configservers']
+end
 
 if configsrvs.length != 1 && configsrvs.length != 3
   Chef::Log.error("Found #{configsrvs.length} configservers, need either one or three of them")
