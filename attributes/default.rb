@@ -108,5 +108,5 @@ default[:mongodb][:key_file_content] = nil
 # TODO: remove bson_ext once mongo gem supports bson >= 2
 default['mongodb']['ruby_gems'] = {
   :mongo => '2.1.1',
-  :bson_ext => '1.12.3'
+  :bson => '3.2.4'
 }

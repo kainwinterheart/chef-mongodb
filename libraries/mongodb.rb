@@ -26,6 +26,7 @@ class Chef::ResourceDefinitionList::MongoDB
     # lazy require, to move loading this modules to runtime of the cookbook
     require 'rubygems'
     require 'mongo'
+    require 'bson'
 
     if members.length == 0
       if Chef::Config[:solo]
@@ -101,7 +102,7 @@ class Chef::ResourceDefinitionList::MongoDB
     end
 
     admin = connection['admin']
-    cmd = BSON::OrderedHash.new
+    cmd = BSON::Document.new
     cmd['replSetInitiate'] = {
       '_id' => name,
       'members' => rs_members
@@ -153,7 +154,7 @@ class Chef::ResourceDefinitionList::MongoDB
         end
 
         admin = rs_connection['admin']
-        cmd = BSON::OrderedHash.new
+        cmd = BSON::Document.new
         cmd['replSetReconfig'] = config
         result = nil
         begin
@@ -197,7 +198,7 @@ class Chef::ResourceDefinitionList::MongoDB
 
         admin = rs_connection['admin']
 
-        cmd = BSON::OrderedHash.new
+        cmd = BSON::Document.new
         cmd['replSetReconfig'] = config
 
         result = nil
@@ -226,6 +227,7 @@ class Chef::ResourceDefinitionList::MongoDB
     # lazy require, to move loading this modules to runtime of the cookbook
     require 'rubygems'
     require 'mongo'
+    require 'bson'
 
     shard_groups = Hash.new { |h, k| h[k] = [] }
 
@@ -277,7 +279,7 @@ class Chef::ResourceDefinitionList::MongoDB
     admin = connection['admin']
 
     shard_members.each do |shard|
-      cmd = BSON::OrderedHash.new
+      cmd = BSON::Document.new
       cmd['addShard'] = shard
       begin
         result = admin.command(cmd, :check_response => false)
@@ -297,6 +299,7 @@ class Chef::ResourceDefinitionList::MongoDB
     # lazy require, to move loading this modules to runtime of the cookbook
     require 'rubygems'
     require 'mongo'
+    require 'bson'
 
     begin
       connection = Mongo::Client.new("mongodb://localhost:#{node['mongodb']['config']['port']}")
@@ -311,7 +314,7 @@ class Chef::ResourceDefinitionList::MongoDB
     Chef::Log.info("enable sharding for these databases: '#{databases.inspect}'")
 
     databases.each do |db_name|
-      cmd = BSON::OrderedHash.new
+      cmd = BSON::Document.new
       cmd['enablesharding'] = db_name
       begin
         result = admin.command(cmd, :check_response => false)
@@ -333,7 +336,7 @@ class Chef::ResourceDefinitionList::MongoDB
     end
 
     sharded_collections.each do |name, key|
-      cmd = BSON::OrderedHash.new
+      cmd = BSON::Document.new
       cmd['shardcollection'] = name
       unless key.kind_of?(Hash)
         key = { "#{key}" => 1 }
@@ -369,6 +372,7 @@ class Chef::ResourceDefinitionList::MongoDB
     # lazy require, to move loading this modules to runtime of the cookbook
     require 'rubygems'
     require 'mongo'
+    require 'bson'
 
     begin
       connection = Mongo::Client.new("mongodb://localhost:#{node['mongodb']['config']['port']}")
@@ -382,12 +386,12 @@ class Chef::ResourceDefinitionList::MongoDB
       dbname = split_collection.shift()
       collection = split_collection.join('.')
 
-      cmd = BSON::OrderedHash.new
+      cmd = BSON::Document.new
       cmd['createIndexes'] = collection
       cmd['indexes'] = []
 
       data.each do |spec|
-        idx_spec = BSON::OrderedHash.new
+        idx_spec = BSON::Document.new
         [ 'name', 'key', 'background', 'sparse', 'unique', 'dropDups' ].each do |key|
             idx_spec[ key ] = spec[ key ] if spec.has_key?( key ) && ! spec[ key ].nil?
         end
