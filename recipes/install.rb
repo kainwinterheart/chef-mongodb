@@ -6,13 +6,6 @@ if node.mongodb.is_replicaset || node.mongodb.is_shard
     node.set[:mongodb][:shard_name] = node['mongodb']['shard_name']
 end
 
-directory "/var/run/mongodb" do
-    owner node[:mongodb][:user]
-    group node[:mongodb][:group]
-    mode '0755'
-    action :create
-end
-
 # prevent-install defaults, but don't overwrite
 file node['mongodb']['sysconfig_file'] do
   content 'ENABLE_MONGODB=no'
@@ -90,6 +83,13 @@ package node[:mongodb][:package_name] do
   options packager_opts
   action :install
   version node[:mongodb][:package_version]
+end
+
+directory "/var/run/mongodb" do
+    owner node[:mongodb][:user]
+    group node[:mongodb][:group]
+    mode '0755'
+    action :create
 end
 
 [ 'mongod', 'mongodb' ].each do |service_name|
