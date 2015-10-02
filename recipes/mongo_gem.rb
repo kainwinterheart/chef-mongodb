@@ -33,8 +33,4 @@ node['mongodb']['ruby_gems'].each do |gem, version|
     version version
     compile_time true
   end
-  chef_gem 'bson_ext' do
-    action :install
-    compile_time true
-  end
 end

@@ -53,9 +53,21 @@ class Chef::ResourceDefinitionList::MongoDB
     rs_members = []
     rs_options = {}
     members.each_index do |n|
+
       new_member = Chef::Node.new
-      new_member.consume_attributes( node.default.to_hash )
-      new_member.consume_attributes( members[n].to_hash )
+
+      default_node_hash = node.default.to_hash
+      default_node_hash.delete( 'run_list' )
+      default_node_hash.delete( 'recipes' )
+
+      new_member.consume_attributes( default_node_hash )
+
+      member_hash = members[n].to_hash
+      member_hash.delete( 'run_list' )
+      member_hash.delete( 'recipes' )
+
+      new_member.consume_attributes( member_hash )
+
       members[n].consume_attributes( new_member.to_hash )
 
       host = "#{members[n]['fqdn']}:#{members[n]['mongodb']['config']['port']}"
