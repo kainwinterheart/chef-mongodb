@@ -110,8 +110,8 @@ class Chef::ResourceDefinitionList::MongoDB
 
     begin
       result = admin.command(cmd, :check_response => false)
-    rescue Mongo::OperationTimeout
-      Chef::Log.info('Started configuring the replicaset, this will take some time, another run should run smoothly')
+    rescue => e
+      Chef::Log.info("Started configuring the replicaset, this will take some time, another run should run smoothly: #{e}")
       return
     end
     if result.fetch('ok', nil) == 1
@@ -283,8 +283,8 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd['addShard'] = shard
       begin
         result = admin.command(cmd, :check_response => false)
-      rescue Mongo::OperationTimeout
-        result = "Adding shard '#{shard}' timed out, run the recipe again to check the result"
+      rescue => e
+        result = "Adding shard '#{shard}' timed out, run the recipe again to check the result: #{e}"
       end
       Chef::Log.info(result.inspect)
     end
@@ -318,8 +318,8 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd['enablesharding'] = db_name
       begin
         result = admin.command(cmd, :check_response => false)
-      rescue Mongo::OperationTimeout
-        result = "enable sharding for '#{db_name}' timed out, run the recipe again to check the result"
+      rescue => e
+        result = "enable sharding for '#{db_name}' timed out, run the recipe again to check the result: #{e}"
       end
       if result['ok'] == 0
         # some error
@@ -345,8 +345,8 @@ class Chef::ResourceDefinitionList::MongoDB
       key = key.inspect
       begin
         result = admin.command(cmd, :check_response => false)
-      rescue Mongo::OperationTimeout
-        result = "sharding '#{name}' on key '#{key}' timed out, run the recipe again to check the result"
+      rescue => e
+        result = "sharding '#{name}' on key '#{key}' timed out, run the recipe again to check the result: #{e}"
       end
       if result['ok'] == 0
         # some error
@@ -404,8 +404,8 @@ class Chef::ResourceDefinitionList::MongoDB
       db = connection[dbname]
       begin
         result = db.command(cmd, :check_response => false)
-      rescue Mongo::OperationTimeout
-        result = "command " + cmd.inspect + " timed out"
+      rescue => e
+        result = "command " + cmd.inspect + " timed out: #{e}"
       end
       if result['ok'] == 0
         # some error
