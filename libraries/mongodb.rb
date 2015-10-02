@@ -159,15 +159,15 @@ class Chef::ResourceDefinitionList::MongoDB
         result = nil
         begin
           result = admin.command(cmd, :check_response => false)
-        rescue Mongo::ConnectionFailure
+        rescue => e
           # reconfiguring destroys existing connections, reconnect
           connection = Mongo::Client.new("mongodb://localhost:#{node['mongodb']['config']['port']}")
           config = connection['local']['system']['replset'].find_one('_id' => name)
           # Validate configuration change
           if config['members'] == rs_members
-            Chef::Log.info("New config successfully applied: #{config.inspect}")
+            Chef::Log.info("New config successfully applied: #{config.inspect}, previous error: #{e}")
           else
-            Chef::Log.error("Failed to apply new config. Current config: #{config.inspect} Target config #{rs_members}")
+            Chef::Log.error("Failed to apply new config. Current config: #{config.inspect} Target config #{rs_members}, previous error: #{e}")
             return
           end
         end
@@ -204,15 +204,15 @@ class Chef::ResourceDefinitionList::MongoDB
         result = nil
         begin
           result = admin.command(cmd, :check_response => false)
-        rescue Mongo::ConnectionFailure
+        rescue => e
           # reconfiguring destroys existing connections, reconnect
           connection = Mongo::Client.new("mongodb://localhost:#{node['mongodb']['config']['port']}")
           config = connection['local']['system']['replset'].find_one('_id' => name)
           # Validate configuration change
           if config['members'] == rs_members
-            Chef::Log.info("New config successfully applied: #{config.inspect}")
+            Chef::Log.info("New config successfully applied: #{config.inspect}, previous error: #{e}")
           else
-            Chef::Log.error("Failed to apply new config. Current config: #{config.inspect} Target config #{rs_members}")
+            Chef::Log.error("Failed to apply new config. Current config: #{config.inspect} Target config #{rs_members}, previous error: #{e}")
             return
           end
         end
@@ -423,14 +423,14 @@ class Chef::ResourceDefinitionList::MongoDB
   end
 
   # Ensure retry upon failure
-  def self.rescue_connection_failure(max_retries = 30)
+  def self.rescue_connection_failure(max_retries = 5)
     retries = 0
     begin
       yield
-    rescue Mongo::ConnectionFailure => ex
+    rescue => ex
       retries += 1
       raise ex if retries > max_retries
-      sleep(0.5)
+      sleep(1)
       retry
     end
   end
