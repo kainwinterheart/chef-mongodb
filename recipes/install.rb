@@ -85,6 +85,15 @@ package node[:mongodb][:package_name] do
   version node[:mongodb][:package_version]
 end
 
+[ 'mongod', 'mongodb' ].each do |service_name|
+    service service_name do
+      provider Chef::Provider::Service::Upstart if node['mongodb']['apt_repo'] == 'ubuntu-upstart'
+      supports :stop => true
+      action [:disable, :stop]
+      ignore_failure true
+    end
+end
+
 # Create keyFile if specified
 if node[:mongodb][:key_file_content]
   file node[:mongodb][:config][:keyFile] do
