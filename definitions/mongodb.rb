@@ -203,7 +203,7 @@ define :mongodb_instance,
   config_clone = {}.merge( new_resource.config.to_hash )
 
   if new_resource.is_mongos
-      config_clone['mongodb']['config']['auth'] = nil
+      config_clone['auth'] = nil
   end
 
   # config file

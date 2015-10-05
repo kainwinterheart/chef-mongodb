@@ -1,4 +1,4 @@
-if node['mongodb']['config']['auth']
+if ( node['mongodb']['config']['auth'] === true ) || ( node['mongodb']['config']['auth'] === 'true' )
 
     include_recipe 'mongodb::install'
     include_recipe 'mongodb::mongo_gem'
