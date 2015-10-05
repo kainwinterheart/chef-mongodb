@@ -233,8 +233,19 @@ class Chef::ResourceDefinitionList::MongoDB
 
     shard_nodes.each do |n|
       new_n = Chef::Node.new
-      new_n.consume_attributes( node.default.to_hash )
-      new_n.consume_attributes( n.to_hash )
+
+      default_node_hash = node.default.to_hash
+      default_node_hash.delete( 'run_list' )
+      default_node_hash.delete( 'recipes' )
+
+      new_n.consume_attributes( default_node_hash )
+
+      member_hash = n.to_hash
+      member_hash.delete( 'run_list' )
+      member_hash.delete( 'recipes' )
+
+      new_n.consume_attributes( member_hash )
+
       n.consume_attributes( new_n.to_hash )
 
       next if n['mongodb']['replica_hidden']
@@ -257,7 +268,7 @@ class Chef::ResourceDefinitionList::MongoDB
 
       shard_groups[key] << "#{n['fqdn']}:#{n['mongodb']['config']['port']}"
     end
-    Chef::Log.info(shard_groups.inspect)
+    Chef::Log.info("shard_groups:" + shard_groups.inspect)
 
     shard_members = []
     shard_groups.each do |name, members|
@@ -267,7 +278,7 @@ class Chef::ResourceDefinitionList::MongoDB
         shard_members << "#{name}/#{members.join(',')}"
       end
     end
-    Chef::Log.info(shard_members.inspect)
+    Chef::Log.info("shard_members: " + shard_members.inspect)
 
     begin
       connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)

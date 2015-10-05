@@ -242,13 +242,23 @@ define :mongodb_instance,
 
   # replicaset
   if new_resource.is_replicaset && new_resource.auto_configure_replicaset
-    rs_nodes = search(
-      :node,
-      "mongodb_cluster_name:#{new_resource.replicaset['mongodb']['cluster_name']} AND \
-       mongodb_is_replicaset:true AND \
-       mongodb_shard_name:#{new_resource.replicaset['mongodb']['shard_name']} AND \
-       chef_environment:#{new_resource.replicaset.chef_environment}"
-    )
+
+    rs_nodes = []
+
+    if node['mongodb']['hint']['rs_nodes'].nil?
+
+        rs_nodes = search(
+          :node,
+          "mongodb_cluster_name:#{new_resource.replicaset['mongodb']['cluster_name']} AND \
+           mongodb_is_replicaset:true AND \
+           mongodb_shard_name:#{new_resource.replicaset['mongodb']['shard_name']} AND \
+           chef_environment:#{new_resource.replicaset.chef_environment}"
+        )
+
+    else
+
+        rs_nodes = node['mongodb']['hint']['rs_nodes']
+    end
 
     ruby_block 'config_replicaset' do
       block do
@@ -268,12 +278,21 @@ define :mongodb_instance,
     # add all shards
     # configure the sharded collections
 
-    shard_nodes = search(
-      :node,
-      "mongodb_cluster_name:#{new_resource.cluster_name} AND \
-       mongodb_is_shard:true AND \
-       chef_environment:#{node.chef_environment}"
-    )
+    shard_nodes = []
+
+    if node['mongodb']['hint']['shard_nodes'].nil?
+
+        shard_nodes = search(
+          :node,
+          "mongodb_cluster_name:#{new_resource.cluster_name} AND \
+           mongodb_is_shard:true AND \
+           chef_environment:#{node.chef_environment}"
+        )
+
+    else
+
+        shard_nodes = node['mongodb']['hint']['shard_nodes']
+    end
 
     ruby_block 'config_sharding' do
       block do
