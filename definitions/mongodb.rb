@@ -29,7 +29,7 @@ define :mongodb_user,
 
         list = params[:notifies].flatten
 
-        ruby_block 'mongodb_add_user' do
+        ruby_block "mongodb_add_user_#{params[:name]}" do
             block do
                 MongoDB.configure_user(node, {
                     "username" => params[:name],
