@@ -484,11 +484,12 @@ class Chef::ResourceDefinitionList::MongoDB
             connection = Mongo::Client.new(hosts, options)
             connection.database_names # check connection
         rescue => e
-            Chef::Log.warn(e)
             connection = Mongo::Client.new(hosts, default_options)
             connection.database_names # check connection
         end
       end
+
+      connection
   end
 
   # Ensure retry upon failure
