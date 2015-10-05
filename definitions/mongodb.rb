@@ -237,6 +237,7 @@ define :mongodb_instance,
     notifies :create, 'ruby_block[config_sharding]', :immediately if new_resource.is_mongos && new_resource.auto_configure_sharding
       # we don't care about a running mongodb service in these cases, all we need is stopping it
     ignore_failure true if new_resource.name == 'mongodb'
+    only_if { sleep 2; true }
   end
 
   # replicaset
