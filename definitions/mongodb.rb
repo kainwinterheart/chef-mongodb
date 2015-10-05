@@ -42,7 +42,7 @@ define :mongodb_user,
 
             while true
 
-                args = list.splice!(0,3)
+                args = list.slice!(0,3)
 
                 if args && ( args.length == 3 )
 
