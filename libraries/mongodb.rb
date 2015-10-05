@@ -41,7 +41,7 @@ class Chef::ResourceDefinitionList::MongoDB
       connection = nil
       rescue_connection_failure do
         connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
-        connection.database_names # check connection
+        connection.database.command(:ismaster => 1) # check connection
       end
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason: #{e}")
@@ -101,7 +101,7 @@ class Chef::ResourceDefinitionList::MongoDB
       rs_member_ips << { '_id' => n, 'host' => "#{members[n]['ipaddress']}:#{port}" }
     end
 
-    admin = connection['admin']
+    admin = connection.database
     cmd = BSON::Document.new
     cmd['replSetInitiate'] = {
       '_id' => name,
@@ -109,7 +109,7 @@ class Chef::ResourceDefinitionList::MongoDB
     }
 
     begin
-      result = admin.command(cmd, :check_response => false)
+      result = admin.command(cmd)
     rescue => e
       Chef::Log.info("Started configuring the replicaset, this will take some time, another run should run smoothly: #{e}")
       return
@@ -150,15 +150,15 @@ class Chef::ResourceDefinitionList::MongoDB
         rs_connection = nil
         rescue_connection_failure do
           rs_connection = Mongo::ReplSetConnection.new(old_members)
-          rs_connection.database_names # check connection
+          rs_connection.database.command(:ismaster => 1) # check connection
         end
 
-        admin = rs_connection['admin']
+        admin = rs_connection.database
         cmd = BSON::Document.new
         cmd['replSetReconfig'] = config
         result = nil
         begin
-          result = admin.command(cmd, :check_response => false)
+          result = admin.command(cmd)
         rescue => e
           # reconfiguring destroys existing connections, reconnect
           connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
@@ -193,17 +193,17 @@ class Chef::ResourceDefinitionList::MongoDB
         rs_connection = nil
         rescue_connection_failure do
           rs_connection = Mongo::ReplSetConnection.new(old_members)
-          rs_connection.database_names # check connection
+          rs_connection.database.command(:ismaster => 1) # check connection
         end
 
-        admin = rs_connection['admin']
+        admin = rs_connection.database
 
         cmd = BSON::Document.new
         cmd['replSetReconfig'] = config
 
         result = nil
         begin
-          result = admin.command(cmd, :check_response => false)
+          result = admin.command(cmd)
         rescue => e
           # reconfiguring destroys existing connections, reconnect
           connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
@@ -276,13 +276,13 @@ class Chef::ResourceDefinitionList::MongoDB
       return
     end
 
-    admin = connection['admin']
+    admin = connection.database
 
     shard_members.each do |shard|
       cmd = BSON::Document.new
       cmd['addShard'] = shard
       begin
-        result = admin.command(cmd, :check_response => false)
+        result = admin.command(cmd)
       rescue => e
         result = "Adding shard '#{shard}' timed out, run the recipe again to check the result: #{e}"
       end
@@ -308,7 +308,7 @@ class Chef::ResourceDefinitionList::MongoDB
       return
     end
 
-    admin = connection['admin']
+    admin = connection.database
 
     databases = sharded_collections.keys.map { |x| x.split('.').first }.uniq
     Chef::Log.info("enable sharding for these databases: '#{databases.inspect}'")
@@ -317,7 +317,7 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd = BSON::Document.new
       cmd['enablesharding'] = db_name
       begin
-        result = admin.command(cmd, :check_response => false)
+        result = admin.command(cmd)
       rescue => e
         result = "enable sharding for '#{db_name}' timed out, run the recipe again to check the result: #{e}"
       end
@@ -344,11 +344,11 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd['key'] = key
       key = key.inspect
       begin
-        result = admin.command(cmd, :check_response => false)
+        result = admin.command(cmd)
       rescue => e
         result = "sharding '#{name}' on key '#{key}' timed out, run the recipe again to check the result: #{e}"
       end
-      if result['ok'] == 0
+      if ( result['ok'] == 0 ) || ( ! result['collectionsharded'] )
         # some error
         errmsg = result.fetch('errmsg')
         if errmsg == 'already sharded'
@@ -401,9 +401,10 @@ class Chef::ResourceDefinitionList::MongoDB
         cmd['indexes'] << idx_spec
       end
       key = key.inspect
-      db = connection[dbname]
+      connection.use( dbname )
+      db = connection.database
       begin
-        result = db.command(cmd, :check_response => false)
+        result = db.command(cmd)
       rescue => e
         result = "command " + cmd.inspect + " timed out: #{e}"
       end
@@ -419,6 +420,7 @@ class Chef::ResourceDefinitionList::MongoDB
         # success
         Chef::Log.info("Indexes for #{dbname}.#{collection} are created successfully")
       end
+      connection.use( 'admin' )
     end
   end
 
