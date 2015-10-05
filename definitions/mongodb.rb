@@ -27,15 +27,20 @@ define :mongodb_user,
 
     if params[:action] == :add
 
-        MongoDB.configure_user(node, {
-            "username" => params[:name],
-            "password" => params[:password],
-            "roles" => params[:roles],
-        })
+        ruby_block 'mongodb_add_user' do
+            block do
+                MongoDB.configure_user(node, {
+                    "username" => params[:name],
+                    "password" => params[:password],
+                    "roles" => params[:roles],
+                })
+            end
+            action :nothing
+            params[:notifies].each do |notification|
+              notifies notification
+            end
 
-        params[:notifies].each do |notification|
-          notifies notification
-        end
+        end.run_action( :run )
     end
 end
 
