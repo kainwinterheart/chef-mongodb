@@ -462,8 +462,8 @@ class Chef::ResourceDefinitionList::MongoDB
     retry_db_op do
         begin
             result = admin.command(cmd).documents[0]
-        rescue => e
-            if (!result.nil?) && result['errmsg'] && (result['errmsg'] =~ /already exists/i)
+        rescue Mongo::Error::OperationFailure => e
+            if e.ERRMSG =~ /already exists/i
                 Chef::Log.info("User #{spec['username']} already exists")
             else
                 raise e
