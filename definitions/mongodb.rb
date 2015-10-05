@@ -19,6 +19,26 @@
 # limitations under the License.
 #
 
+define :mongodb_user,
+    :password => nil,
+    :roles => [],
+    :action => :nothing,
+    :notifies => [] do
+
+    if params[:action] == :add
+
+        MongoDB.configure_user(node, {
+            "username" => params[:name],
+            "password" => params[:password],
+            "roles" => params[:roles],
+        })
+
+        params[:notifies].each do |notification|
+          notifies notification
+        end
+    end
+end
+
 define :mongodb_instance,
        :mongodb_type  => 'mongod',
        :action        => [:enable, :start],

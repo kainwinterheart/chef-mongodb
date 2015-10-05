@@ -38,11 +38,7 @@ class Chef::ResourceDefinitionList::MongoDB
     end
 
     begin
-      connection = nil
-      rescue_connection_failure do
-        connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
-        connection.database.command(:ismaster => 1) # check connection
-      end
+      connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason: #{e}")
       return
@@ -119,13 +115,14 @@ class Chef::ResourceDefinitionList::MongoDB
     elsif ( result['errmsg'] =~ /(\S+) is already initiated/ ) || (result['errmsg'] == 'already initialized')
       server, port = Regexp.last_match.nil? || Regexp.last_match.length < 2 ? ['localhost', node['mongodb']['config']['port']] : Regexp.last_match[1].split(':')
       begin
-        connection = Mongo::Client.new(["#{server}:#{port}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
+        connection = get_connection( node, ["#{server}:#{port}"] )
+        connection.use('local')
       rescue
         abort("Could not connect to database: '#{server}:#{port}'")
       end
 
       # check if both configs are the same
-      config = connection['local']['system']['replset'].find_one('_id' => name)
+      config = connection['system.replset'].find('_id' => name).limit(1).first
 
       if config['_id'] == name && config['members'] == rs_members
         # config is up-to-date, do nothing
@@ -161,8 +158,9 @@ class Chef::ResourceDefinitionList::MongoDB
           result = admin.command(cmd).documents[0]
         rescue => e
           # reconfiguring destroys existing connections, reconnect
-          connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
-          config = connection['local']['system']['replset'].find_one('_id' => name)
+          connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
+          connection.use('local')
+          config = connection.database['system.replset'].find('_id' => name).limit(1).first
           # Validate configuration change
           if config['members'] == rs_members
             Chef::Log.info("New config successfully applied: #{config.inspect}, previous error: #{e}")
@@ -206,8 +204,9 @@ class Chef::ResourceDefinitionList::MongoDB
           result = admin.command(cmd).documents[0]
         rescue => e
           # reconfiguring destroys existing connections, reconnect
-          connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
-          config = connection['local']['system']['replset'].find_one('_id' => name)
+          connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
+          connection.use('local')
+          config = connection['system.replset'].find('_id' => name).limit(1).first
           # Validate configuration change
           if config['members'] == rs_members
             Chef::Log.info("New config successfully applied: #{config.inspect}, previous error: #{e}")
@@ -281,7 +280,7 @@ class Chef::ResourceDefinitionList::MongoDB
     Chef::Log.info("shard_members: " + shard_members.inspect)
 
     begin
-      connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
+      connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
       return
@@ -313,7 +312,7 @@ class Chef::ResourceDefinitionList::MongoDB
     require 'bson'
 
     begin
-      connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
+      connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
       return
@@ -386,7 +385,7 @@ class Chef::ResourceDefinitionList::MongoDB
     require 'bson'
 
     begin
-      connection = Mongo::Client.new(["localhost:#{node['mongodb']['config']['port']}"], :server_selection_timeout => 3, :connection_timeout => 1, :connect => :direct)
+      connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
       return
@@ -435,8 +434,65 @@ class Chef::ResourceDefinitionList::MongoDB
     end
   end
 
+  def self.configure_user(node, spec)
+    # lazy require, to move loading this modules to runtime of the cookbook
+    require 'rubygems'
+    require 'mongo'
+    require 'bson'
+
+    begin
+      connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
+    rescue => e
+      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
+      return
+    end
+
+    admin = connection.database
+
+    cmd = BSON::Document.new
+    cmd['createUser'] = spec.username
+    cmd['pwd'] = spec.password
+    cmd['roles'] = spec.roles
+    begin
+        result = admin.command(cmd).documents[0]
+    rescue => e
+        result = "Adding user '#{spec.username}' failed, reason: #{e}"
+    end
+    Chef::Log.info(result.inspect)
+  end
+
+  def self.get_connection(node, hosts)
+
+      connection = nil
+      default_options = {
+          :server_selection_timeout => 3,
+          :connection_timeout => 1,
+          :connect => :direct,
+          :database => 'admin',
+      }
+
+      options = {}.merge( default_options )
+
+      if node['mongodb']['config']['auth']
+
+          options[:user] = node['mongodb']['admin']['username']
+          options[:password] = node['mongodb']['admin']['password']
+      end
+
+      rescue_connection_failure do
+        begin
+            connection = Mongo::Client.new(hosts, options)
+            connection.database_names # check connection
+        rescue => e
+            Chef::Log.warn(e)
+            connection = Mongo::Client.new(hosts, default_options)
+            connection.database_names # check connection
+        end
+      end
+  end
+
   # Ensure retry upon failure
-  def self.rescue_connection_failure(max_retries = 3)
+  def self.rescue_connection_failure(max_retries = 2)
     retries = 0
     begin
       yield

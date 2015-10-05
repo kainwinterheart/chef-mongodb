@@ -1,21 +1,18 @@
-chef_gem 'mongo'
+if node['mongodb']['config']['auth']
 
-users = []
-admin = node['mongodb']['admin']
+    include_recipe 'mongodb::install'
+    include_recipe 'mongodb::mongo_gem'
 
-# If authentication is required,
-# add the admin to the users array for adding/updating
-users << admin if node['mongodb']['config']['auth'] == true
+    # If authentication is required,
+    # add the admin to the users array for adding/updating
 
-users.concat(node['mongodb']['users'])
-
-# Add each user specified in attributes
-users.each do |user|
-  mongodb_user user['username'] do
-    password user['password']
-    roles user['roles']
-    database user['database']
-    connection node['mongodb']
-    action :add
-  end
+    # Add each user specified in attributes
+    [ node['mongodb']['admin'] ].concat( node['mongodb']['users'] ).each do |user|
+      mongodb_user user['username'] do
+        password user['password']
+        roles user['roles']
+        action :add
+        notifies node['mongodb']['reload_action'], "service[#{node['mongodb']['instance_name']}]", :delayed
+      end
+    end
 end
