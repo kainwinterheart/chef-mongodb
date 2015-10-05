@@ -268,14 +268,29 @@ define :mongodb_instance,
     provider Chef::Provider::Service::Upstart if node['mongodb']['apt_repo'] == 'ubuntu-upstart'
     supports :status => true, :restart => true
     action new_resource.service_action
-    new_resource.service_notifies.each do |service_notify|
-      notifies :run, service_notify
-    end
-    notifies :create, 'ruby_block[config_replicaset]', :immediately if new_resource.is_replicaset && new_resource.auto_configure_replicaset
-    notifies :create, 'ruby_block[config_sharding]', :immediately if new_resource.is_mongos && new_resource.auto_configure_sharding
       # we don't care about a running mongodb service in these cases, all we need is stopping it
     ignore_failure true if new_resource.name == 'mongodb'
     only_if { sleep 2; true }
+  end
+
+  ruby_block "wait_and_restart_#{new_resource.name}_crutch" do
+      block do
+          sleep 10
+      end
+
+      notifies new_resource.reload_action, "service[#{new_resource.name}]", :immediately
+  end
+
+  ruby_block "configure_#{new_resource.name}" do
+      block do
+          sleep 3
+      end
+
+      new_resource.service_notifies.each do |service_notify|
+        notifies :run, service_notify
+      end
+      notifies :create, 'ruby_block[config_replicaset]', :immediately if new_resource.is_replicaset && new_resource.auto_configure_replicaset
+      notifies :create, 'ruby_block[config_sharding]', :immediately if new_resource.is_mongos && new_resource.auto_configure_sharding
   end
 
   # replicaset
