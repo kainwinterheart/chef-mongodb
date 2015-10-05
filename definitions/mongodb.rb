@@ -37,7 +37,7 @@ define :mongodb_user,
             end
             action :nothing
             params[:notifies].each do |notification|
-              notifies notification
+              notifies notification[0], notification[1], notification[2]
             end
 
         end.run_action( :run )
