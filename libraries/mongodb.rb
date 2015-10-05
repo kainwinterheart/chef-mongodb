@@ -115,7 +115,7 @@ class Chef::ResourceDefinitionList::MongoDB
     end
     if result['ok'] == 1
       # everything is fine, do nothing
-    elsif ( result['errmsg'] =~ /(\S+) is already initiated/ ) || (result['errmsg'] == 'already initialized')
+    elsif ( result['errmsg'] =~ /(\S+) is already initiated/i ) || (result['errmsg'] =~ /already initialized/i)
       server, port = Regexp.last_match.nil? || Regexp.last_match.length < 2 ? ['localhost', node['mongodb']['config']['port']] : Regexp.last_match[1].split(':')
       begin
         connection = get_connection( node, ["#{server}:#{port}"] )
@@ -460,7 +460,15 @@ class Chef::ResourceDefinitionList::MongoDB
     result = nil
 
     retry_db_op do
-        result = admin.command(cmd).documents[0]
+        begin
+            result = admin.command(cmd).documents[0]
+        rescue => e
+            if (!result.nil?) && result['errmsg'] && (result['errmsg'] =~ /already exists/i)
+                Chef::Log.info("User #{spec['username']} already exists")
+            else
+                raise e
+            end
+        end
     end
 
     Chef::Log.info(result.inspect)
