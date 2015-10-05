@@ -38,7 +38,7 @@ define :mongodb_user,
                 })
             end
 
-            action :nothing
+            action :run
 
             while true
 
@@ -53,8 +53,7 @@ define :mongodb_user,
                     break
                 end
             end
-
-        end.run_action( :run )
+        end
     end
 end
 
