@@ -450,13 +450,13 @@ class Chef::ResourceDefinitionList::MongoDB
     admin = connection.database
 
     cmd = BSON::Document.new
-    cmd['createUser'] = spec.username
-    cmd['pwd'] = spec.password
-    cmd['roles'] = spec.roles
+    cmd['createUser'] = spec['username']
+    cmd['pwd'] = spec['password']
+    cmd['roles'] = spec['roles']
     begin
         result = admin.command(cmd).documents[0]
     rescue => e
-        result = "Adding user '#{spec.username}' failed, reason: #{e}"
+        result = "Adding user '#{spec['username']}' failed, reason: #{e}"
     end
     Chef::Log.info(result.inspect)
   end
