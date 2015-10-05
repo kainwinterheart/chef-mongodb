@@ -27,6 +27,8 @@ define :mongodb_user,
 
     if params[:action] == :add
 
+        list = params[:notifies].flattern
+
         ruby_block 'mongodb_add_user' do
             block do
                 MongoDB.configure_user(node, {
@@ -35,9 +37,21 @@ define :mongodb_user,
                     "roles" => params[:roles],
                 })
             end
+
             action :nothing
-            params[:notifies].each do |notification|
-              notifies notification[0], notification[1], notification[2]
+
+            while true
+
+                args = list.splice!(0,3)
+
+                if args && ( args.length == 3 )
+
+                    notifies args[0], args[1], args[2]
+
+                else
+
+                    break
+                end
             end
 
         end.run_action( :run )
