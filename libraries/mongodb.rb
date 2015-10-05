@@ -469,6 +469,9 @@ class Chef::ResourceDefinitionList::MongoDB
           :connection_timeout => 1,
           :connect => :direct,
           :database => 'admin',
+          :read => {
+              :mode => :secondary_preferred
+          },
       }
 
       options = {}.merge( default_options )
