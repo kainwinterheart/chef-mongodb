@@ -42,8 +42,10 @@ define :mongodb_instance,
     node.default['mongodb']['config']['nojournal'] = nil
     node.default['mongodb']['config']['rest'] = nil
     node.default['mongodb']['config']['smallfiles'] = nil
+    Chef::Log.warn('About to populate configdb')
     unless node['mongodb']['config']['configdb']
-      node.normal['mongodb']['config']['configdb'] = params[:configservers].map do |n|
+      Chef::Log.warn('About to scan all config servers')
+      configservers = params[:configservers].map do |n|
         new_n = Chef::Node.new
         new_n.consume_attributes( node.default.to_hash )
         new_n.consume_attributes( n.to_hash )
@@ -55,14 +57,24 @@ define :mongodb_instance,
           host = n['fqdn']
         end
 
+        Chef::Log.warn("Found config server: #{host}:#{n['mongodb']['config']['port']}")
         "#{host}:#{n['mongodb']['config']['port']}"
       end.sort.join(',')
+      Chef::Log.warn("Compiled list of config servers: #{configservers}")
+      node.default['mongodb']['config']['configdb'] = configservers
+      node.normal['mongodb']['config']['configdb'] = configservers
+      node.override['mongodb']['config']['configdb'] = configservers
+    end
+
+    unless node['mongodb']['config']['configdb']
+        throw 'No config servers found!'
     end
   else
     provider = 'mongod'
   end
 
   node.default['mongodb']['config']['configsvr'] = true if node['mongodb']['is_configserver']
+  Chef::Log.warn("Config servers are: #{node['mongodb']['config']['configdb']}")
 
   require 'ostruct'
 
