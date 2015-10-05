@@ -200,6 +200,12 @@ define :mongodb_instance,
     notifies new_resource.reload_action, "service[#{new_resource.name}]"
   end
 
+  config_clone = {}.merge( new_resource.config.to_hash )
+
+  if new_resource.is_mongos
+      config_clone['mongodb']['config']['auth'] = nil
+  end
+
   # config file
   template new_resource.dbconfig_file do
     cookbook new_resource.template_cookbook
@@ -207,7 +213,7 @@ define :mongodb_instance,
     group new_resource.root_group
     owner 'root'
     variables(
-      :config => new_resource.config
+      :config => config_clone
     )
     helpers MongoDBConfigHelpers
     mode '0644'
