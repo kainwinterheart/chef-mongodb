@@ -19,8 +19,8 @@
 # limitations under the License.
 #
 
-node.set['mongodb']['is_mongos'] = true
-node.set['mongodb']['shard_name'] = node['mongodb']['shard_name']
+node.normal['mongodb']['is_mongos'] = true
+node.normal['mongodb']['shard_name'] = node['mongodb']['shard_name']
 node.override['mongodb']['instance_name'] = 'mongos'
 
 include_recipe 'mongodb::install'

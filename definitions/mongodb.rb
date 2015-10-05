@@ -43,7 +43,7 @@ define :mongodb_instance,
     node.default['mongodb']['config']['rest'] = nil
     node.default['mongodb']['config']['smallfiles'] = nil
     unless node['mongodb']['config']['configdb']
-      node.set['mongodb']['config']['configdb'] = params[:configservers].map do |n|
+      node.normal['mongodb']['config']['configdb'] = params[:configservers].map do |n|
         new_n = Chef::Node.new
         new_n.consume_attributes( node.default.to_hash )
         new_n.consume_attributes( n.to_hash )
