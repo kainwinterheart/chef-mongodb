@@ -27,7 +27,7 @@ define :mongodb_user,
 
     if params[:action] == :add
 
-        list = params[:notifies].flattern
+        list = params[:notifies].flatten
 
         ruby_block 'mongodb_add_user' do
             block do
