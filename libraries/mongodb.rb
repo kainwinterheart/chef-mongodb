@@ -105,7 +105,10 @@ class Chef::ResourceDefinitionList::MongoDB
     }
 
     begin
-      result = admin.command(cmd).documents[0]
+        result = nil
+        retry_db_op do
+            result = admin.command(cmd).documents[0]
+        end
     rescue => e
       Chef::Log.info("Started configuring the replicaset, this will take some time, another run should run smoothly: #{e}")
       return
@@ -144,11 +147,7 @@ class Chef::ResourceDefinitionList::MongoDB
         end
         config['version'] += 1
 
-        rs_connection = nil
-        rescue_connection_failure do
-          rs_connection = Mongo::ReplSetConnection.new(old_members)
-          rs_connection.database.command(:ismaster => 1) # check connection
-        end
+        rs_connection = get_connection(node, old_members)
 
         admin = rs_connection.database
         cmd = BSON::Document.new
@@ -188,11 +187,7 @@ class Chef::ResourceDefinitionList::MongoDB
           config['members'] << { '_id' => max_id, 'host' => m }.merge(rs_options[m])
         end
 
-        rs_connection = nil
-        rescue_connection_failure do
-          rs_connection = Mongo::ReplSetConnection.new(old_members)
-          rs_connection.database.command(:ismaster => 1) # check connection
-        end
+        rs_connection = get_connection(node, old_members)
 
         admin = rs_connection.database
 
@@ -291,10 +286,9 @@ class Chef::ResourceDefinitionList::MongoDB
     shard_members.each do |shard|
       cmd = BSON::Document.new
       cmd['addShard'] = shard
-      begin
+      result = nil
+      retry_db_op do
         result = admin.command(cmd).documents[0]
-      rescue => e
-        result = "Adding shard '#{shard}' timed out, run the recipe again to check the result: #{e}"
       end
       Chef::Log.info(result.inspect)
     end
@@ -327,7 +321,10 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd = BSON::Document.new
       cmd['enablesharding'] = db_name
       begin
-        result = admin.command(cmd).documents[0]
+        result = nil
+        retry_db_op do
+            result = admin.command(cmd).documents[0]
+        end
       rescue => e
         result = "enable sharding for '#{db_name}' timed out, run the recipe again to check the result: #{e}"
       end
@@ -354,7 +351,10 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd['key'] = key
       key = key.inspect
       begin
-        result = admin.command(cmd).documents[0]
+        result = nil
+        retry_db_op do
+            result = admin.command(cmd).documents[0]
+        end
       rescue => e
         result = "sharding '#{name}' on key '#{key}' timed out, run the recipe again to check the result: #{e}"
       end
@@ -414,7 +414,10 @@ class Chef::ResourceDefinitionList::MongoDB
       connection.use( dbname )
       db = connection.database
       begin
-        result = db.command(cmd).documents[0]
+        result = nil
+        retry_db_op do
+            result = db.command(cmd).documents[0]
+        end
       rescue => e
         result = "command " + cmd.inspect + " timed out: #{e}"
       end
@@ -453,11 +456,13 @@ class Chef::ResourceDefinitionList::MongoDB
     cmd['createUser'] = spec['username']
     cmd['pwd'] = spec['password']
     cmd['roles'] = spec['roles']
-    begin
+
+    result = nil
+
+    retry_db_op do
         result = admin.command(cmd).documents[0]
-    rescue => e
-        result = "Adding user '#{spec['username']}' failed, reason: #{e}"
     end
+
     Chef::Log.info(result.inspect)
   end
 
@@ -482,7 +487,7 @@ class Chef::ResourceDefinitionList::MongoDB
           options[:password] = node['mongodb']['admin']['password']
       end
 
-      rescue_connection_failure do
+      retry_db_op do
         begin
             connection = Mongo::Client.new(hosts, options)
             connection.database_names # check connection
@@ -496,7 +501,7 @@ class Chef::ResourceDefinitionList::MongoDB
   end
 
   # Ensure retry upon failure
-  def self.rescue_connection_failure(max_retries = 2)
+  def self.retry_db_op(max_retries = 3)
     retries = 0
     begin
       yield
