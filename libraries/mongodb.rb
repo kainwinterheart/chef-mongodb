@@ -463,7 +463,7 @@ class Chef::ResourceDefinitionList::MongoDB
         begin
             result = admin.command(cmd).documents[0]
         rescue Mongo::Error::OperationFailure => e
-            if e.ERRMSG =~ /already exists/i
+            if e.message =~ /already exists/i
                 Chef::Log.info("User #{spec['username']} already exists")
             else
                 raise e
