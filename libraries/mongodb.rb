@@ -118,8 +118,7 @@ class Chef::ResourceDefinitionList::MongoDB
     elsif ( result['errmsg'] =~ /(\S+) is already initiated/i ) || (result['errmsg'] =~ /already initialized/i)
       server, port = Regexp.last_match.nil? || Regexp.last_match.length < 2 ? ['localhost', node['mongodb']['config']['port']] : Regexp.last_match[1].split(':')
       begin
-        connection = get_connection( node, ["#{server}:#{port}"] )
-        connection.use('local')
+        connection = get_connection( node, ["#{server}:#{port}"] ).use('local')
       rescue
         abort("Could not connect to database: '#{server}:#{port}'")
       end
@@ -157,8 +156,7 @@ class Chef::ResourceDefinitionList::MongoDB
           result = admin.command(cmd).documents[0]
         rescue => e
           # reconfiguring destroys existing connections, reconnect
-          connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
-          connection.use('local')
+          connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"]).use('local')
           config = connection.database['system.replset'].find('_id' => name).limit(1).first
           # Validate configuration change
           if config['members'] == rs_members
@@ -199,8 +197,7 @@ class Chef::ResourceDefinitionList::MongoDB
           result = admin.command(cmd).documents[0]
         rescue => e
           # reconfiguring destroys existing connections, reconnect
-          connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"])
-          connection.use('local')
+          connection = get_connection(node, ["localhost:#{node['mongodb']['config']['port']}"]).use('local')
           config = connection['system.replset'].find('_id' => name).limit(1).first
           # Validate configuration change
           if config['members'] == rs_members
@@ -411,8 +408,7 @@ class Chef::ResourceDefinitionList::MongoDB
         cmd['indexes'] << idx_spec
       end
       key = key.inspect
-      connection.use( dbname )
-      db = connection.database
+      db = connection.use( dbname ).database
       begin
         result = nil
         retry_db_op do
@@ -433,7 +429,6 @@ class Chef::ResourceDefinitionList::MongoDB
         # success
         Chef::Log.info("Indexes for #{dbname}.#{collection} are created successfully")
       end
-      connection.use( 'admin' )
     end
   end
 
