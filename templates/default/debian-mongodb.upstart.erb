@@ -22,6 +22,8 @@ script
   if [ "x$ENABLE_MONGOD" = "xyes" ]; then
       #Mongo sometimes losts his pid
       dbpath=`cat $CONFIGFILE | egrep ^dbpath | awk -F '=' '{print $2}'`;
+      mkdir -p $dbpath
+      chown $DAEMON_USER: $dbpath
       if [ -e $dbpath/mongod.lock ] ; then
           pid=`cat $dbpath/mongod.lock`;
           cmd=`cat /proc/$pid/cmdline | tr "\000" "\n"|head -n 1 |cut -d : -f 1`
@@ -34,6 +36,9 @@ script
           fi;
       fi
       pidfilepath=`cat $CONFIGFILE | egrep ^pidfilepath | awk -F '=' '{print $2}'`;
+      pidfiledir=`basename $pidfilepath`
+      mkdir -p $pidfiledir
+      chown $DAEMON_USER: $pidfiledir
       exec start-stop-daemon --start --pidfile $pidfilepath --quiet --chuid $DAEMON_USER --exec $DAEMON -- $DAEMON_OPTS
   fi
 end script
