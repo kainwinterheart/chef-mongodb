@@ -276,12 +276,12 @@ define :mongodb_instance,
     action new_resource.service_action
       # we don't care about a running mongodb service in these cases, all we need is stopping it
     ignore_failure true if new_resource.name == 'mongodb'
-    only_if { sleep 2; true }
+    only_if { sleep 1; true }
   end
 
   ruby_block "wait_and_restart_#{new_resource.name}_crutch" do
       block do
-          sleep 10
+          sleep 3
       end
 
       notifies new_resource.reload_action, "service[#{new_resource.name}]", :immediately
@@ -289,7 +289,7 @@ define :mongodb_instance,
 
   ruby_block "configure_#{new_resource.name}" do
       block do
-          sleep 3
+          sleep 1
       end
 
       new_resource.service_notifies.each do |service_notify|
