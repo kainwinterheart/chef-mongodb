@@ -107,7 +107,11 @@ class Chef::ResourceDefinitionList::MongoDB
     begin
         result = nil
         retry_db_op do
-            result = admin.command(cmd).documents[0]
+            begin
+                result = admin.command(cmd).documents[0]
+            rescue Mongo::Error::OperationFailure => e
+                result = { 'ok' => 0, 'errmsg' => e.message }
+            end
         end
     rescue => e
       Chef::Log.info("Started configuring the replicaset, this will take some time, another run should run smoothly: #{e}")
@@ -320,7 +324,11 @@ class Chef::ResourceDefinitionList::MongoDB
       begin
         result = nil
         retry_db_op do
-            result = admin.command(cmd).documents[0]
+            begin
+                result = admin.command(cmd).documents[0]
+            rescue MongoDB::OperationFailure => e
+                result = { 'ok' => 0, 'errmsg' => e.message }
+            end
         end
       rescue => e
         result = "enable sharding for '#{db_name}' timed out, run the recipe again to check the result: #{e}"
@@ -328,7 +336,7 @@ class Chef::ResourceDefinitionList::MongoDB
       if result['ok'] == 0
         # some error
         errmsg = result['errmsg']
-        if errmsg == 'already enabled'
+        if errmsg =~ /already enabled/i
           Chef::Log.info("Sharding is already enabled for database '#{db_name}', doing nothing")
         else
           Chef::Log.error("Failed to enable sharding for database #{db_name}, result was: #{result.inspect}")
@@ -350,7 +358,11 @@ class Chef::ResourceDefinitionList::MongoDB
       begin
         result = nil
         retry_db_op do
-            result = admin.command(cmd).documents[0]
+            begin
+                result = admin.command(cmd).documents[0]
+            rescue MongoDB::OperationFailure => e
+                result = { 'ok' => 0, 'errmsg' => e.message }
+            end
         end
       rescue => e
         result = "sharding '#{name}' on key '#{key}' timed out, run the recipe again to check the result: #{e}"
@@ -358,7 +370,7 @@ class Chef::ResourceDefinitionList::MongoDB
       if ( result['ok'] == 0 ) || ( ! result['collectionsharded'] )
         # some error
         errmsg = result['errmsg']
-        if errmsg == 'already sharded'
+        if errmsg =~ /already sharded/i
           Chef::Log.info("Sharding is already configured for collection '#{name}', doing nothing")
         else
           Chef::Log.error("Failed to shard collection #{name}, result was: #{result.inspect}")
@@ -412,7 +424,11 @@ class Chef::ResourceDefinitionList::MongoDB
       begin
         result = nil
         retry_db_op do
-            result = db.command(cmd).documents[0]
+            begin
+                result = db.command(cmd).documents[0]
+            rescue MongoDB::OperationFailure => e
+                result = { 'ok' => 0, 'errmsg' => e.message }
+            end
         end
       rescue => e
         result = "command " + cmd.inspect + " timed out: #{e}"
@@ -420,11 +436,11 @@ class Chef::ResourceDefinitionList::MongoDB
       if result['ok'] == 0
         # some error
         errmsg = result['errmsg']
-        #if errmsg == 'already sharded'
-        #  Chef::Log.info("Sharding is already configured for collection '#{name}', doing nothing")
-        #else
+        if errmsg =~ /already sharded/i
+          Chef::Log.info("Sharding is already configured for collection '#{name}', doing nothing")
+        else
           Chef::Log.error("Failed to execute command " + cmd.inspect + ", result was: " + result.inspect)
-        #end
+        end
       else
         # success
         Chef::Log.info("Indexes for #{dbname}.#{collection} are created successfully")
