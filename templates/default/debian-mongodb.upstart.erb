@@ -43,7 +43,7 @@ script
       pidfilepath=`cat $CONFIGFILE | egrep ^pidfilepath | awk -F '=' '{print $2}'`;
 
       if [ ! -z "${pidfilepath}" ]; then
-          pidfiledir=`basename $pidfilepath`
+          pidfiledir=`dirname $pidfilepath`
 
           if [ ! -z "${pidfiledir}" ]; then
               mkdir -p $pidfiledir
