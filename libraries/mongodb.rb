@@ -289,7 +289,11 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd['addShard'] = shard
       result = nil
       retry_db_op do
-        result = admin.command(cmd).documents[0]
+        begin
+            result = admin.command(cmd).documents[0]
+        rescue MongoDB::OperationFailure => e
+            result = { 'ok' => 0, 'errmsg' => e.message }
+        end
       end
       Chef::Log.info(result.inspect)
     end
@@ -436,8 +440,8 @@ class Chef::ResourceDefinitionList::MongoDB
       if result['ok'] == 0
         # some error
         errmsg = result['errmsg']
-        if errmsg =~ /already sharded/i
-          Chef::Log.info("Sharding is already configured for collection '#{name}', doing nothing")
+        if errmsg =~ /already/i
+          Chef::Log.info("Indexes are already created for collection '#{name}', doing nothing")
         else
           Chef::Log.error("Failed to execute command " + cmd.inspect + ", result was: " + result.inspect)
         end
