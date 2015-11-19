@@ -292,13 +292,19 @@ class Chef::ResourceDefinitionList::MongoDB
           retry_db_op do
             begin
                 result = admin.command(cmd).documents[0]
-            rescue MongoDB::OperationFailure => e
+            rescue Mongo::Error::OperationFailure => e
                 result = { 'ok' => 0, 'errmsg' => e.message }
             end
           end
       rescue => e
-          Chef::Log.warn("Could not execute command: #{shard}")
+          result = { 'ok' => 0, 'errmsg' => e.message }
       end
+
+      if result['ok'] == 0
+
+          Chef::Log.warn("Could not execute command: #{cmd}")
+      end
+
       Chef::Log.info("addShard result: #{result.inspect}")
     end
   end
@@ -334,7 +340,7 @@ class Chef::ResourceDefinitionList::MongoDB
         retry_db_op do
             begin
                 result = admin.command(cmd).documents[0]
-            rescue MongoDB::OperationFailure => e
+            rescue Mongo::Error::OperationFailure => e
                 result = { 'ok' => 0, 'errmsg' => e.message }
             end
         end
@@ -373,7 +379,7 @@ class Chef::ResourceDefinitionList::MongoDB
         retry_db_op do
             begin
                 result = admin.command(cmd).documents[0]
-            rescue MongoDB::OperationFailure => e
+            rescue Mongo::Error::OperationFailure => e
                 result = { 'ok' => 0, 'errmsg' => e.message }
             end
         end
@@ -439,7 +445,7 @@ class Chef::ResourceDefinitionList::MongoDB
         retry_db_op do
             begin
                 result = db.command(cmd).documents[0]
-            rescue MongoDB::OperationFailure => e
+            rescue Mongo::Error::OperationFailure => e
                 result = { 'ok' => 0, 'errmsg' => e.message }
             end
         end
