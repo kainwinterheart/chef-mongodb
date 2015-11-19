@@ -288,14 +288,18 @@ class Chef::ResourceDefinitionList::MongoDB
       cmd = BSON::Document.new
       cmd['addShard'] = shard
       result = nil
-      retry_db_op do
-        begin
-            result = admin.command(cmd).documents[0]
-        rescue MongoDB::OperationFailure => e
-            result = { 'ok' => 0, 'errmsg' => e.message }
-        end
+      begin
+          retry_db_op do
+            begin
+                result = admin.command(cmd).documents[0]
+            rescue MongoDB::OperationFailure => e
+                result = { 'ok' => 0, 'errmsg' => e.message }
+            end
+          end
+      rescue => e
+          Chef::Log.warn("Could not execute command: #{shard}")
       end
-      Chef::Log.info(result.inspect)
+      Chef::Log.info("addShard result: #{result.inspect}")
     end
   end
 
@@ -335,7 +339,12 @@ class Chef::ResourceDefinitionList::MongoDB
             end
         end
       rescue => e
-        result = "enable sharding for '#{db_name}' timed out, run the recipe again to check the result: #{e}"
+          if result.nil?
+              result = {
+                  'ok' => 0,
+                  'errmsg' => "enable sharding for '#{db_name}' timed out, run the recipe again to check the result: #{e}"
+              }
+          end
       end
       if result['ok'] == 0
         # some error
